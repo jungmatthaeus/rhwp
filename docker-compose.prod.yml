@@ -1,10 +1,11 @@
 version: '3.8'
+
 services:
-  rhwp-prod:
+  rhwp-app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: rhwp-app
+    container_name: rhwp-web-server
     ports:
-      - "8080:80"
+      - "8080:80"  # 다른 포트를 원하시면 "9000:80" 등으로 수정 가능
     restart: always
