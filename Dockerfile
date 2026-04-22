@@ -1,5 +1,5 @@
 # 1단계: Rust를 사용하여 WASM 코어 빌드
-FROM rust:1.77-slim AS wasm-builder
+FROM rust:slim AS wasm-builder
 
 # 빌드 필수 도구 설치
 RUN apt-get update && apt-get install -y \
