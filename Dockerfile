@@ -1,25 +1,21 @@
-FROM rust:latest
-
-# wasm 타겟 및 wasm-pack 설치
-RUN rustup target add wasm32-unknown-unknown \
-    && rustup component add clippy \
-    && cargo install wasm-pack
-
-# 호스트 사용자 UID/GID로 실행 (빌드 산출물 소유권 문제 방지)
-ARG UID=1000
-ARG GID=1000
-RUN groupadd -g ${GID} builder 2>/dev/null || true \
-    && useradd -m -u ${UID} -g ${GID} builder \
-    && mkdir -p /home/builder/.cache/.wasm-pack \
-    && chown -R builder:builder /home/builder
-
-ENV CARGO_HOME=/home/builder/.cargo
-RUN mkdir -p /home/builder/.cargo \
-    && cp -r /usr/local/cargo/* /home/builder/.cargo/ \
-    && chown -R builder:builder /home/builder/.cargo
-
-USER builder
+# 1. WASM 빌드 단계
+FROM rust:1.77-slim AS wasm-builder
+RUN apt-get update && apt-get install -y curl pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
+RUN curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 WORKDIR /app
+COPY . .
+RUN wasm-pack build --target web
 
-# 기본 명령: 네이티브 빌드
-CMD ["cargo", "build"]
+# 2. 프론트엔드 빌드 단계
+FROM node:18-alpine AS frontend-builder
+WORKDIR /app
+COPY --from=wasm-builder /app /app
+WORKDIR /app/rhwp-studio
+RUN npm install
+RUN npm run build
+
+# 3. 최종 Nginx 배포 단계
+FROM nginx:alpine
+COPY --from=frontend-builder /app/rhwp-studio/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
