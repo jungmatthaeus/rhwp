@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  rhwp-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rhwp-app
+    ports:
+      - "8080:80"
+    restart: always
