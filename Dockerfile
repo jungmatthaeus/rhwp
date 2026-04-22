@@ -19,15 +19,16 @@ COPY . .
 RUN wasm-pack build --target web
 
 # 2단계: Node.js를 사용하여 프론트엔드(Studio) 빌드
-FROM node:18-alpine AS frontend-builder
+FROM node:18-slim AS frontend-builder
 
 WORKDIR /app
-# 1단계의 결과물(pkg 포함)을 복사
 COPY --from=wasm-builder /app /app
 
 WORKDIR /app/rhwp-studio
-# 의존성 설치 및 정적 파일 빌드
 RUN npm install
+
+# 혹시 모를 빌드 중 메모리 부족(OOM) 방지
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 RUN npm run build
 
 # 3단계: Nginx를 사용하여 최종 웹 서비스 배포
